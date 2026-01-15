@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1768380754" />
+    <testcase name="apb_basic_test" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="61" time="0.0009524822235107422" sim_time_ns="105.0" ratio_time="110238.27784730913" />
+  </testsuite>
+</testsuites>
