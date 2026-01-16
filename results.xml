@@ -1,6 +1,10 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1768380754" />
-    <testcase name="apb_basic_test" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="61" time="0.0009524822235107422" sim_time_ns="105.0" ratio_time="110238.27784730913" />
+    <property name="random_seed" value="1768561796" />
+    <testcase name="apb_coverage_test" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="191" time="0.020672082901000977" sim_time_ns="3645.0" ratio_time="176324.75728043367" />
+    <testcase name="apb_quick_test" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="353" time="0.0015349388122558594" sim_time_ns="299.9989999999998" ratio_time="195446.87879714184" />
+    <testcase name="apb_pslverr_test" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="390" time="0.0013496875762939453" sim_time_ns="250.9989999999998" ratio_time="185968.22287511025" />
+    <testcase name="apb_debug_wait_cycles" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="492" time="0.02678084373474121" sim_time_ns="5628.999" ratio_time="210187.51521625253" />
+    <testcase name="apb_check_rng" classname="test_apb" file="/home/thilagan/apb_dv/test_apb.py" lineno="550" time="0.013518333435058594" sim_time_ns="3069.999" ratio_time="227098.92567365078" />
   </testsuite>
 </testsuites>

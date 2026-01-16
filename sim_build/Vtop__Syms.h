@@ -8,6 +8,7 @@
 #define VERILATED_VTOP__SYMS_H_  // guard
 
 #include "verilated.h"
+#include "verilated_vcd_c.h"
 
 // INCLUDE MODEL CLASS
 
@@ -23,6 +24,9 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop__Syms final : public VerilatedSyms {
   public:
     // INTERNAL STATE
     Vtop* const __Vm_modelp;
+    bool __Vm_dumping = false;  // Dumping is active
+    VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp
+    VerilatedVcdC* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;  /// Trace class for $dump*
     bool __Vm_activity = false;  ///< Used by trace routines to determine change occurred
     uint32_t __Vm_baseCode = 0;  ///< Used by trace routines when tracing multiple models
     VlDeleter __Vm_deleter;
@@ -34,6 +38,18 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop__Syms final : public VerilatedSyms {
     // SCOPE NAMES
     VerilatedScope* __Vscopep_tb;
     VerilatedScope* __Vscopep_tb__dut;
+    VerilatedScope* __Vscopep_tb__dut__assert_penable_requires_psel;
+    VerilatedScope* __Vscopep_tb__dut__assert_pready_one_cycle_pulse;
+    VerilatedScope* __Vscopep_tb__dut__assert_pready_only_in_access;
+    VerilatedScope* __Vscopep_tb__dut__assert_psel_stable_during_access;
+    VerilatedScope* __Vscopep_tb__dut__assert_pslverr_for_invalid_addr;
+    VerilatedScope* __Vscopep_tb__dut__assert_pslverr_only_on_completion;
+    VerilatedScope* __Vscopep_tb__dut__assert_pwrite_stable_during_transfer;
+    VerilatedScope* __Vscopep_tb__dut__assert_read_only_on_completion;
+    VerilatedScope* __Vscopep_tb__dut__assert_wait_target_range;
+    VerilatedScope* __Vscopep_tb__dut__assert_write_only_on_completion;
+    VerilatedScope* __Vscopep_tb__dut__assert_xfer_active_implies_psel;
+    VerilatedScope* __Vscopep_tb__dut__unnamedblk1;
 
     // SCOPE HIERARCHY
     VerilatedHierarchy __Vhier;
@@ -44,6 +60,9 @@ class alignas(VL_CACHE_LINE_BYTES) Vtop__Syms final : public VerilatedSyms {
 
     // METHODS
     const char* name() const { return TOP.vlNamep; }
+    void _traceDump();
+    void _traceDumpOpen();
+    void _traceDumpClose();
 };
 
 #endif  // guard

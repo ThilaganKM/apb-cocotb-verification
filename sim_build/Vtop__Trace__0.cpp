@@ -42,11 +42,17 @@ void Vtop___024root__trace_chg_0_sub_0(Vtop___024root* vlSelf, VerilatedVcd::Buf
     bufp->chgIData(oldp+17,(vlSelfRef.tb__DOT__dut__DOT__PRDATA),32);
     bufp->chgBit(oldp+18,(vlSelfRef.tb__DOT__dut__DOT__PREADY));
     bufp->chgBit(oldp+19,(vlSelfRef.tb__DOT__dut__DOT__PSLVERR));
-    bufp->chgIData(oldp+20,(vlSelfRef.tb__DOT__dut__DOT__regfile[0]),32);
-    bufp->chgIData(oldp+21,(vlSelfRef.tb__DOT__dut__DOT__regfile[1]),32);
-    bufp->chgIData(oldp+22,(vlSelfRef.tb__DOT__dut__DOT__regfile[2]),32);
-    bufp->chgIData(oldp+23,(vlSelfRef.tb__DOT__dut__DOT__regfile[3]),32);
-    bufp->chgIData(oldp+24,(vlSelfRef.tb__DOT__dut__DOT__addr_latched),32);
+    bufp->chgCData(oldp+20,(vlSelfRef.tb__DOT__dut__DOT__wait_cnt),3);
+    bufp->chgCData(oldp+21,(vlSelfRef.tb__DOT__dut__DOT__wait_target),3);
+    bufp->chgIData(oldp+22,(vlSelfRef.tb__DOT__dut__DOT__addr_latched),32);
+    bufp->chgIData(oldp+23,(vlSelfRef.tb__DOT__dut__DOT__regfile[0]),32);
+    bufp->chgIData(oldp+24,(vlSelfRef.tb__DOT__dut__DOT__regfile[1]),32);
+    bufp->chgIData(oldp+25,(vlSelfRef.tb__DOT__dut__DOT__regfile[2]),32);
+    bufp->chgIData(oldp+26,(vlSelfRef.tb__DOT__dut__DOT__regfile[3]),32);
+    bufp->chgBit(oldp+27,(vlSelfRef.tb__DOT__dut__DOT__xfer_done_next));
+    bufp->chgBit(oldp+28,(vlSelfRef.tb__DOT__dut__DOT__xfer_active));
+    bufp->chgBit(oldp+29,(vlSelfRef.tb__DOT__dut__DOT__pslverr_next));
+    bufp->chgIData(oldp+30,(vlSelfRef.tb__DOT__dut__DOT__unnamedblk1__DOT__rand_val),32);
 }
 
 void Vtop___024root__trace_cleanup(void* voidSelf, VerilatedVcd* /*unused*/) {

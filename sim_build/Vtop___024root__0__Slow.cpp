@@ -20,8 +20,9 @@ VL_ATTR_COLD void Vtop___024root___eval_initial__TOP(Vtop___024root* vlSelf) {
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     auto& vlSelfRef = std::ref(*vlSelf).get();
     // Body
-    vlSelfRef.tb__DOT__dut__DOT__PREADY = 1U;
-    vlSelfRef.tb__DOT__dut__DOT__PSLVERR = 0U;
+    vlSymsp->_vm_contextp__->dumpfile("apb_wave.vcd"s);
+    vlSymsp->_traceDumpOpen();
+    VL_WRITEF_NX("[TB] Starting APB slave testbench\n",0);
 }
 
 VL_ATTR_COLD void Vtop___024root___eval_final(Vtop___024root* vlSelf) {
@@ -49,7 +50,7 @@ VL_ATTR_COLD void Vtop___024root___eval_settle(Vtop___024root* vlSelf) {
 #ifdef VL_DEBUG
             Vtop___024root___dump_triggers__stl(vlSelfRef.__VstlTriggered, "stl"s);
 #endif
-            VL_FATAL_MT("/home/thilagan/apb_dv/tb.sv", 1, "", "Settle region did not converge after 100 tries");
+            VL_FATAL_MT("/home/thilagan/apb_dv/tb.sv", 3, "", "Settle region did not converge after 100 tries");
         }
         __VstlIterCount = ((IData)(1U) + __VstlIterCount);
     } while (Vtop___024root___eval_phase__stl(vlSelf));
@@ -190,10 +191,38 @@ VL_ATTR_COLD void Vtop___024root___ctor_var_reset(Vtop___024root* vlSelf) {
     vlSelf->tb__DOT__dut__DOT__PRDATA = VL_SCOPED_RAND_RESET_I(32, __VscopeHash, 9186053927512734094ull);
     vlSelf->tb__DOT__dut__DOT__PREADY = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 5947668891065063622ull);
     vlSelf->tb__DOT__dut__DOT__PSLVERR = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 15981066531538993887ull);
+    vlSelf->tb__DOT__dut__DOT__wait_cnt = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 3997117025159583119ull);
+    vlSelf->tb__DOT__dut__DOT__wait_target = VL_SCOPED_RAND_RESET_I(3, __VscopeHash, 1334509828636456656ull);
+    vlSelf->tb__DOT__dut__DOT__addr_latched = VL_SCOPED_RAND_RESET_I(32, __VscopeHash, 9172220546097492905ull);
     for (int __Vi0 = 0; __Vi0 < 4; ++__Vi0) {
         vlSelf->tb__DOT__dut__DOT__regfile[__Vi0] = VL_SCOPED_RAND_RESET_I(32, __VscopeHash, 14493446850900023233ull);
     }
-    vlSelf->tb__DOT__dut__DOT__addr_latched = VL_SCOPED_RAND_RESET_I(32, __VscopeHash, 9172220546097492905ull);
+    vlSelf->tb__DOT__dut__DOT__xfer_done_next = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 202892457913151503ull);
+    vlSelf->tb__DOT__dut__DOT__xfer_active = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 5963342442981236514ull);
+    vlSelf->tb__DOT__dut__DOT__pslverr_next = VL_SCOPED_RAND_RESET_I(1, __VscopeHash, 6927523350989196337ull);
+    vlSelf->tb__DOT__dut__DOT___Vpast_5_1 = 0;
+    vlSelf->tb__DOT__dut__DOT___Vpast_7_1 = 0;
+    vlSelf->tb__DOT__dut__DOT___Vpast_11_1 = 0;
+    vlSelf->tb__DOT__dut__DOT___Vpast_13_1 = 0;
+    vlSelf->tb__DOT__dut__DOT___Vpast_14_1 = 0;
+    vlSelf->tb__DOT__dut__DOT___Vpast_16_1 = 0;
+    vlSelf->tb__DOT__dut__DOT__unnamedblk1__DOT__rand_val = VL_SCOPED_RAND_RESET_I(32, __VscopeHash, 8949733274158309568ull);
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__PRESETn = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__PREADY = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__PSEL = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__PENABLE = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__xfer_done_next = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__PWRITE = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT___Vpast_5_1 = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT___Vpast_7_1 = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__xfer_active = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__wait_target = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT___Vpast_11_1 = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT___Vpast_13_1 = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__PSLVERR = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT___Vpast_14_1 = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT___Vpast_16_1 = 0;
+    vlSelf->__Vsampled_TOP__tb__DOT__dut__DOT__addr_latched = 0;
     for (int __Vi0 = 0; __Vi0 < 1; ++__Vi0) {
         vlSelf->__VstlTriggered[__Vi0] = 0;
     }
