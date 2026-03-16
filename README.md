@@ -1,373 +1,230 @@
-# APB Slave Verification Project (cocotb + Verilator)
+# APB Slave — Functional Verification (cocotb + Verilator)
 
-## 1. Project Overview
+> Python-based functional verification of an APB slave with configurable wait states, PSLVERR error signaling, and coverage-driven test development using cocotb and Verilator.
 
-This project implements **end-to-end functional verification of an APB (Advanced Peripheral Bus) slave** using **cocotb with Verilator**. The goal is to verify correctness, protocol compliance, robustness under random wait states, and error handling (PSLVERR), while achieving full functional and assertion coverage.
-
-This is a **verification-focused project**, not a toy example, and mirrors real industry DV practices: assertions, coverage closure, stress testing, and regression cleanliness.
-
----
-
-## 2. Verification Environment
-
-### Tools Used
-
-* **Simulator**: Verilator 5.x
-* **Verification Framework**: cocotb (Python)
-* **Language**: SystemVerilog (RTL + Assertions), Python (Testbench)
-
-### Directory Structure
-
-```
-apb_dv/
-├── rtl/
-│   └── apb_slave.sv
-├── tb/
-│   ├── test_apb.py
-│   ├── coverage.py
-│   └── assertions.sv
-├── sim_build/
-├── Makefile
-└── README.md
-```
+**Tools:** Verilator 5.x · cocotb 2.0.1 · Python 3.12 · SystemVerilog (RTL + SVA)  
+**Author:** Appalla Subrahmanya Karthikeya
 
 ---
 
-## 3. DUT Description
+## DUT — APB Slave
 
-The DUT is an **APB slave** supporting:
+### Features
 
-* Read and write transactions
-* Configurable random wait states
-* Address decoding with valid/invalid address detection
-* PSLVERR generation for invalid accesses
+- 4 memory-mapped 32-bit registers
+- Configurable random wait states (1–5 cycles per transaction)
+- PSLVERR generation for invalid address accesses
+- 10+ embedded SVA protocol assertions
 
-### Supported Registers
+### Register Map
 
 | Address | Register |
-| ------- | -------- |
-| 0x1000  | REG0     |
-| 0x1004  | REG1     |
-| 0x1008  | REG2     |
-| 0x100C  | REG3     |
+|---------|----------|
+| `0x1000` | REG0 |
+| `0x1004` | REG1 |
+| `0x1008` | REG2 |
+| `0x100C` | REG3 |
 
----
+Any address outside this range triggers `PSLVERR=1`.
 
-## 4. Testbench Architecture
+### APB Transfer — Timing
 
-The testbench is written in **cocotb** and consists of:
-
-* APB master driver
-* Monitors for transactions and wait cycles
-* Reference model for data checking
-* Functional coverage collection
-* Protocol and design assertions (embedded in RTL)
-
----
-
-## 5. Test Suite
-
-### Implemented Tests
-
-1. **Basic Functional Test**
-
-   * Directed reads and writes
-   * Data integrity check
-
-2. **Coverage Stress Test**
-
-   * Random addresses and data
-   * Random wait cycles
-   * Coverage closure to 100%
-
-3. **Quick Sanity Test**
-
-   * Lightweight regression-friendly test
-
-4. **PSLVERR Test**
-
-   * Valid vs invalid address accesses
-   * PSLVERR assertion and clearing behavior
-
-5. **Debug Wait Cycle Test**
-
-   * Observes real wait cycle distribution
-   * Validates stall + ACCESS cycle behavior
-
-6. **RNG Test**
-
-   * Confirms random wait cycle generator range
-
----
-
-## 6. Assertions Implemented
-
-### Protocol Assertions
-
-* PADDR stable during ACCESS phase
-* PWRITE stable during ACCESS phase
-* PSLVERR asserted only after transfer completion
-
-### Example Assertion
-
-```systemverilog
-property p_pwrite_stable_during_access;
-  @(posedge PCLK) disable iff (!PRESETn)
-  (PSEL && PENABLE) |-> $stable(PWRITE);
-endproperty
+```
+         SETUP phase          ACCESS phase
+         ───────────          ──────────────────────────────
+PCLK  :  _____|‾‾‾‾‾|_______|‾‾‾‾‾|_______|‾‾‾‾‾|_______
+PSEL  :  _______|‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|________
+PENABLE:  ______________|‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|________
+PREADY :  ____________________________|‾‾‾‾‾|____________
+          ← 1 setup cycle →← N wait cycles →← done →
 ```
 
-### Key Debug Learnings
-
-* `$rose()` used for level-based signals like PSLVERR
-* Internal handshake signals preferred over raw bus signals
-* Proper separation of SETUP vs ACCESS phases
+Wait states are generated using `$urandom % 6` — producing 1 to 5 cycles per transaction. The peripheral stalls by holding `PREADY=0` until `wait_cnt == wait_target`.
 
 ---
 
-## 7. Functional & Assertion Coverage
+## Verification Architecture
 
-### Functional Coverage
+```
+┌─────────────────────────────────────────────┐
+│              test_apb.py                    │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │           APBMaster                 │    │
+│  │  - write(addr, data)               │    │
+│  │  - read(addr) → data               │    │
+│  │  - cleanup() between transactions  │    │
+│  │  - records wait cycles per txn     │    │
+│  └──────────────────┬──────────────────┘    │
+│                     │                       │
+│  ┌──────────────────▼──────────────────┐    │
+│  │           APBCoverage               │    │
+│  │  - wait_state_bins {1:0..5:0}      │    │
+│  │  - transaction_types {R:0, W:0}    │    │
+│  │  - addresses_seen (set)            │    │
+│  │  - pslverr_count                   │    │
+│  │  - record_transaction()            │    │
+│  │  - get_coverage_report()           │    │
+│  │  - is_full_coverage()              │    │
+│  └─────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
+           │ cocotb virtual signals
+           ▼
+┌─────────────────────────────────────────────┐
+│              apb_slave.sv (DUT)             │
+│  + embedded SVA assertions                  │
+└─────────────────────────────────────────────┘
+```
 
-* Wait state coverage (1–5 cycles)
-* Read vs write coverage
-* Address coverage
-* Error vs non-error paths
+### APBMaster Driver
 
-### Assertion Coverage
+The `APBMaster` class implements the APB master protocol in Python:
 
-* Successful APB transfer
-* PSLVERR assertion path
-* Min and max wait cycle completion
+```python
+async def write(self, addr, data):
+    # SETUP phase
+    dut.PSEL.value = 1; dut.PENABLE.value = 0
+    dut.PWRITE.value = 1; dut.PADDR.value = addr
+    await RisingEdge(dut.PCLK)
+    # ACCESS phase
+    dut.PENABLE.value = 1
+    while dut.PREADY.value == 0:   # wait for PREADY
+        wait_cycles += 1
+        await RisingEdge(dut.PCLK)
+    # record coverage, cleanup
+```
 
-Coverage achieved: **100%**
+Every transaction automatically records wait cycles, transaction type, address, and PSLVERR status into the coverage model.
 
 ---
 
-## 8. Known Issues & Fixes (Learning Highlights)
+## SVA Assertions (in RTL)
 
-| Issue                          | Resolution                                            |
-| ------------------------------ | ----------------------------------------------------- |
-| PSLVERR timing mismatch        | Fixed using `$rose()` and internal completion signals |
-| PWRITE assertion false failure | Qualified with PENABLE                                |
-| Wait cycle off-by-one          | Test updated to include ACCESS cycle                  |
+10+ protocol and design assertions embedded directly in `apb_slave.sv`:
+
+| Assertion | Property |
+|-----------|----------|
+| `assert_pready_only_in_access` | PREADY can only be high when `PSEL && PENABLE` |
+| `assert_penable_requires_psel` | PENABLE must not assert without PSEL |
+| `assert_psel_stable_during_access` | PSEL must not change mid-transfer |
+| `assert_pwrite_stable_during_transfer` | PWRITE must be stable through ACCESS phase |
+| `assert_xfer_active_implies_psel` | Internal `xfer_active` flag requires PSEL |
+| `assert_wait_target_range` | `wait_target` must not exceed MAX_WAIT_CYCLES |
+| `assert_pready_one_cycle_pulse` | PREADY must deassert the cycle after it asserts |
+| `assert_pslverr_only_on_completion` | PSLVERR only rises after transfer completion |
+| `assert_pslverr_for_invalid_addr` | Invalid addresses must generate PSLVERR |
 
 ---
 
-## 9. Regression Status
+## Test Suite
 
-Final regression result:
+| Test | Description | Transactions |
+|------|-------------|-------------|
+| `apb_coverage_test` | Main coverage-driven test — writes all registers with corner-case data patterns, reads back, verifies data integrity, checks all wait states covered | 48 |
+| `apb_quick_test` | Smoke test for regression — 2 writes + 2 reads, fast pass/fail | 4 |
+| `apb_pslverr_test` | PSLVERR validation — valid and invalid address accesses, verifies error signaling and clearing | 5 |
+| `apb_debug_wait_cycles` | Wait cycle distribution analysis across 100 transactions | 100 |
+| `apb_check_rng` | RNG range verification — confirms $urandom generates 1–5 cycles as designed | 50 |
+
+### Data Corner Cases Tested
+
+```python
+test_patterns = [
+    (0x1000, 0xDEADBEEF),   # Walking pattern
+    (0x1004, 0xCAFEBABE),
+    (0x1008, 0xF00DF00D),
+    (0x100C, 0xBAADF00D),
+    (0x1000, 0x55555555),   # Alternating 0101
+    (0x1004, 0xAAAAAAAA),   # Alternating 1010
+    (0x1008, 0xFFFFFFFF),   # All ones
+    (0x100C, 0x00000000),   # All zeros
+    ...
+]
+```
+
+---
+
+## Coverage Results
+
+| Coverage Bin | Target | Result |
+|-------------|--------|--------|
+| Wait state = 1 cycle | Hit | ✓ |
+| Wait state = 2 cycles | Hit | ✓ |
+| Wait state = 3 cycles | Hit | ✓ |
+| Wait state = 4 cycles | Hit | ✓ |
+| Wait state = 5 cycles | Hit | ✓ |
+| Write transactions | Hit | ✓ |
+| Read transactions | Hit | ✓ |
+| Address 0x1000 | Hit | ✓ |
+| Address 0x1004 | Hit | ✓ |
+| Address 0x1008 | Hit | ✓ |
+| Address 0x100C | Hit | ✓ |
+| PSLVERR path | Hit | ✓ |
+| **Total functional coverage** | | **100%** |
+
+---
+
+## Regression Results
 
 ```
 TESTS=5  PASS=5  FAIL=0
-```
 
-All tests and assertions pass cleanly.
+UVM_ERROR  : 0
+Assertion failures : 0
+Coverage   : 100%
+```
 
 ---
 
-## 10. Key Takeaways
+## Key Debugging Notes
 
-* Realistic APB verification flow
-* Assertion-driven debugging
-* Coverage-driven test development
-* Industry-aligned DV practices
+| Issue | Root Cause | Fix |
+|-------|-----------|-----|
+| PSLVERR timing mismatch | Sampled `PSLVERR` level instead of edge | Used `$rose()` and internal `xfer_done_next` signal |
+| PWRITE assertion false failure | Assertion not qualified with ACCESS phase | Added `PENABLE` qualifier to property |
+| Wait cycle off-by-one | Not accounting for ACCESS cycle in count | Updated test to include ACCESS cycle in wait count |
+| Signal contamination between tests | `PWRITE`/`PADDR` not cleared between transactions | Added `cleanup()` method to APBMaster |
 
-## 🎯 Quick Project Overview
+---
 
-Implements an APB slave with:
-- 4 memory-mapped registers (0x1000-0x100C)
-- Configurable wait states (1-5 cycles)
-- PSLVERR generation for invalid addresses
-- Comprehensive SystemVerilog Assertions (SVA)
-
-## 📊 Verification Strategy
-
-### 1. **Functional Verification**
-- Basic read/write operations
-- Wait state randomization
-- Data integrity checks
-
-### 2. **Protocol Compliance**
-- APB timing checks via SVA assertions
-- Negative testing for protocol violations
-- Reset recovery testing
-
-### 3. **Coverage-Driven Verification**
-- Wait state coverage (1-5 cycles)
-- Transaction type coverage (read/write)
-- Address space coverage
-- Error condition coverage (PSLVERR)
-
-### 4. **Assertion-Based Verification**
-- 10+ SVA assertions for APB protocol compliance
-- Design integrity assertions
-- Error condition assertions
-
-### Supported Operations
-- **Write**: PSEL=1, PENABLE=0 → PENABLE=1 → wait N cycles → PREADY=1
-- **Read**: Same as write, PRDATA valid when PREADY=1
-- **Wait States**: Random 1-5 cycles per transaction
-- **Error Handling**: PSLVERR=1 for invalid addresses
-
-## 🛠️ Tools Used
-
-- **RTL Simulator**: Verilator 5.044
-- **Verification Framework**: cocotb 2.0.1
-- **Language**: SystemVerilog (RTL), Python 3.12 (Tests)
-- **Assertions**: SystemVerilog Assertions (SVA)
-
-## 🚀 Getting Started
+## How to Run
 
 ### Prerequisites
+
 ```bash
-# Install Python virtual environment
 python3 -m venv dv_env
 source dv_env/bin/activate
-pip install cocotb cocotb-test
+pip install cocotb
 
-# Install Verilator
-# Ubuntu: sudo apt-get install verilator
-# Or build from source: https://verilator.org/guide/latest/install.html
-Run Tests
-bash
+# Verilator (Ubuntu)
+sudo apt-get install verilator
+```
+
+### Commands
+
+```bash
 # Run all tests
 make
 
 # Run specific test
 make COCOTB_TESTCASE=apb_coverage_test
+make COCOTB_TESTCASE=apb_quick_test
+make COCOTB_TESTCASE=apb_pslverr_test
+make COCOTB_TESTCASE=apb_debug_wait_cycles
+make COCOTB_TESTCASE=apb_check_rng
 
-# Clean build
+# Clean
 make clean
-Test Results
-Tests generate:
-
-Console output with coverage reports
-
-Waveforms (if tracing enabled)
-
-Results.xml (JUnit format)
-
-📈 Coverage Metrics
-Coverage tracked:
-
-Wait States: 1, 2, 3, 4, 5 cycles
-
-Transaction Types: Read, Write
-
-Addresses: 0x1000, 0x1004, 0x1008, 0x100C
-
-Error Conditions: PSLVERR assertion
-
-Target: 100% functional coverage
-
-⚠️ Assertions Implemented
-Protocol Assertions
-PREADY only during ACCESS phase (PSEL=1, PENABLE=1)
-
-Address stable during ACCESS phase
-
-PENABLE requires PSEL
-
-Write/Read only on transfer completion
-
-PSEL stable during ACCESS phase
-
-PWRITE stable during transfer
-
-Design Assertions
-xfer_active implies PSEL
-
-wait_target within range (1-5)
-
-PREADY one-cycle pulse
-
-PSLVERR only with PREADY
-
-PSLVERR for invalid addresses
-
-🧪 Test Suite
-Functional Tests
-apb_coverage_test: Main coverage-driven test
-
-apb_quick_test: Smoke/regression test
-
-apb_debug_wait_cycles: Wait cycle distribution analysis
-
-Negative Tests
-Protocol violation tests
-
-Reset during transfer
-
-Invalid address access
-
-Signal stability violations
-
-Error Tests
-apb_pslverr_test: PSLVERR generation and validation
-
-📝 Key Learnings
-APB Protocol Timing: Proper SETUP/ACCESS phase handling
-
-Registered Handshakes: PREADY timing alignment with data
-
-Coverage-Driven Verification: Tracking all wait states and scenarios
-
-Assertion-Based Verification: Catching protocol violations early
-
-Negative Testing: Testing error conditions and recovery
-
-🔮 Future Enhancements
-Performance Metrics: Throughput and latency analysis
-
-Power-Aware Testing: Clock gating scenarios
-
-Formal Verification: Property checking with SymbiYosys
-
-UVM Integration: Convert to UVM testbench
-
-CI/CD Pipeline: Automated regression with GitHub Actions
-
-📚 References
-AMBA APB Protocol Specification
-
-cocotb Documentation
-
-Verilator Documentation
-
-SystemVerilog Assertions Tutorial
-
-👤 Author
-Your Name
-DV Engineer
-LinkedIn | GitHub
-
-📄 License
-MIT License - See LICENSE file for details
-
-text
-
-Also create a `Makefile` update:
-
-```makefile
-# Add to your existing Makefile
-test-all: test-functional test-negative test-pslverr
-
-test-functional:
-	$(MAKE) COCOTB_TEST_MODULES=test_apb
-
-test-negative:
-	$(MAKE) COCOTB_TEST_MODULES=test_apb_negative
-
-test-pslverr:
-	$(MAKE) COCOTB_TEST_MODULES=test_apb COCOTB_TESTCASE=apb_pslverr_test
-
-wave:
-	gtkwave apb_wave.vcd &
-
-clean-all:
-	rm -rf sim_build results.xml apb_wave.vcd *.log
+```
 
 ---
 
-**Author**: Thilagan KM
+## Why cocotb + Verilator
+
+This project deliberately uses a different verification stack from the UVM-based projects to demonstrate tool versatility:
+
+- **cocotb** allows verification logic in Python — faster test development, easier data processing, access to Python libraries for analysis
+- **Verilator** compiles SystemVerilog to C++ for fast simulation — ideal for coverage-driven testing with many transactions
+- **SVA in RTL** — assertions embedded in the DUT itself catch protocol violations regardless of which testbench is used
+
+This combination mirrors the open-source and startup DV stack, complementing the QuestaSim + UVM experience from the RISC-V and AHB-APB projects.
